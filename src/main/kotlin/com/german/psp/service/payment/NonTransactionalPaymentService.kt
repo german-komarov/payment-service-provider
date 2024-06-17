@@ -18,7 +18,7 @@ class NonTransactionalPaymentService(
     private val bAcquirerService: BAcquirerService
 ) : PaymentService {
     override suspend fun processPayment(input: PaymentInput): PaymentResult {
-        val transaction = input.run {
+        var transaction = input.run {
             Transaction(
                 UUID.randomUUID().toString(),
                 TransactionStatus.PENDING,
@@ -29,7 +29,7 @@ class NonTransactionalPaymentService(
             )
         }
 
-        transactionRepository.saveTransaction(transaction)
+        transaction = transactionRepository.saveTransaction(transaction)
 
         val bin = transaction.card.bin
         val isSumOfBinDigitsEven = bin.sumOfDigits.let { (it % 2) == 0 }
@@ -39,11 +39,13 @@ class NonTransactionalPaymentService(
             bAcquirerService.sendTransaction(transaction)
         }
 
-        if(acquirerResponse.isApproved) {
+        if (acquirerResponse.isApproved) {
             transaction.updateStatus(TransactionStatus.APPROVED)
         } else {
             transaction.updateStatus(TransactionStatus.DENIED)
         }
+
+        transaction = transactionRepository.saveTransaction(transaction)
 
         return PaymentResult(transaction.id, transaction.status, acquirerResponse.details)
     }

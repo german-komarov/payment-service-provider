@@ -24,5 +24,6 @@ class InMemoryTransactionRepository(
 
     override suspend fun saveTransaction(transaction: Transaction) = coroutineScope {
         launch(executorCoroutineDispatcher) { storage[transaction.id] = transaction }.join()
+        transaction
     }
 }

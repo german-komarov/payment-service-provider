@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: psp
+
+com:
+  german:
+    psp:
+      app:
+        logging:
+          enabled: true
+      payment:
+        currencies:
+          available: usd, eu
+        validation:
+          strategy: failfast # or composing
+
+

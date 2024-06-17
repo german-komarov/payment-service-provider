@@ -14,6 +14,18 @@ Also, you can access API documentation (currently single endpoint) by accessing 
 
 
 
+## Possible improvements
+### Validation  
+For this test task, I created one general validation framework that actually mixes API and business validation, so in the production-grade software, I would separate them by moving API validation to the javax.validation framework and business validation to the domain level.
+
+### API  
+For this test task, I pass objects that I receive in the API directly to the service level, which in production-grade code must be avoided, and we should leave API messages on the API level while the service level should accept and return business-level abstractions.
+
+  
+### Error Handling  
+While I implemented the error handling functionality, it also has ways to improve, and one of the main points is the non-stable interface of the error response. While the API's success flow is well documented in Swagger and stable, the error flow has a dynamic interface, particularly the details field, which for now has Any type (to accept both map and string), but of course in the production-grade code it must be stabilized.
+
+
 ## Implementation Notes
 
 ### Tech Stack  

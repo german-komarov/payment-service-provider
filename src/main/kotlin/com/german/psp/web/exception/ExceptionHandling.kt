@@ -1,7 +1,10 @@
 package com.german.psp.web.exception
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.german.psp.lib.context.requestIdOrThrow
 import com.german.psp.lib.validation.FailedValidationException
+import com.german.psp.lib.validation.ReasonFormat
 import com.german.psp.platform.properties.AppProperties
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -16,14 +19,19 @@ import java.time.Instant
 import kotlin.coroutines.coroutineContext
 
 @ControllerAdvice
-class ExceptionHandling(appProps: AppProperties) {
+class ExceptionHandling(appProps: AppProperties, private val objectMapper: ObjectMapper) {
     private val loggingProps = appProps.logging
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     @ExceptionHandler(FailedValidationException::class)
     suspend fun handle(exception: FailedValidationException, exchange: ServerWebExchange) =
-        badRequestWithDetails(exception.failure.reason, exchange.request)
-
+        when (exception.failure.format) {
+            ReasonFormat.STRING -> badRequestWithDetails(exception.failure.reason, exchange.request)
+            ReasonFormat.JSON -> badRequestWithDetails(
+                objectMapper.readValue(exception.failure.reason),
+                exchange.request
+            )
+        }
 
     @ExceptionHandler(ServerWebInputException::class)
     suspend fun handle(exception: ServerWebInputException, exchange: ServerWebExchange) =
@@ -36,7 +44,10 @@ class ExceptionHandling(appProps: AppProperties) {
     @ExceptionHandler(Exception::class)
     suspend fun handleOtherException(exception: Exception, exchange: ServerWebExchange) = run {
         if (loggingProps.enabled) {
-            logger.error("For request(id=${coroutineContext.requestIdOrThrow}) there is an uncaught exception: ", exception)
+            logger.error(
+                "For request(id=${coroutineContext.requestIdOrThrow}) there is an uncaught exception: ",
+                exception
+            )
         } else {
             exception.printStackTrace()
         }
